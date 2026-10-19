@@ -1,0 +1,1437 @@
+<!doctype html>
+<html lang="de"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#E9EFF2">
+<title>NER Zyklusblatt</title>
+<style>
+/* Layout: eine schmale Spalte. Das Zyklusblatt ist wie Millimeterpapier gezeichnet und steht im Mittelpunkt. Die Reiter liegen unten in einer Leiste. */
+:root {
+  --font-display: system-ui, sans-serif;
+  --font-body: system-ui, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "Segoe UI Mono", monospace;
+  --bg: #E9EFF2;
+  --surface: #F8FBFC;
+  --ink: #15252E;
+  --muted: #566B76;
+  --grid: #CAD8DF;
+  --grid-strong: #98AFBA;
+  --accent: #7B2D52;
+  --accent-ink: #FFFFFF;
+  --phase: #D3ECE6;
+  --bleed: #B0243C;
+  --warn-bg: #F6E9C9;
+  --warn-ink: #5B4410;
+  --overlay: rgba(10, 20, 26, 0.72);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1A20;
+    --surface: #16252D;
+    --ink: #E4EEF2;
+    --muted: #93A9B3;
+    --grid: #27404B;
+    --grid-strong: #416170;
+    --accent: #E39BB8;
+    --accent-ink: #2A0F1B;
+    --phase: #173A37;
+    --bleed: #F0788C;
+    --warn-bg: #3A3014;
+    --warn-ink: #F0DDA6;
+    --overlay: rgba(0, 0, 0, 0.8);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1A20;
+  --surface: #16252D;
+  --ink: #E4EEF2;
+  --muted: #93A9B3;
+  --grid: #27404B;
+  --grid-strong: #416170;
+  --accent: #E39BB8;
+  --accent-ink: #2A0F1B;
+  --phase: #173A37;
+  --bleed: #F0788C;
+  --warn-bg: #3A3014;
+  --warn-ink: #F0DDA6;
+  --overlay: rgba(0, 0, 0, 0.8);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden]:not([hidden="until-found" i]) { display: none !important; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.45;
+  padding-block: 20px 104px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1, h2 { font-family: var(--font-display); margin: 0; text-wrap: balance; }
+h1 { font-size: 2rem; line-height: 1.05; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.15rem; font-weight: 600; }
+p { margin: 0; }
+.eyebrow, .lbl, .mono {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sub { color: var(--muted); font-size: 0.95rem; }
+code, .kbd { font-family: var(--font-mono); font-size: 0.85em; background: var(--grid); padding: 1px 6px; border-radius: 6px; overflow-wrap: anywhere; }
+header { display: flex; flex-direction: column; gap: 6px; }
+
+.panel { display: flex; flex-direction: column; gap: 20px; }
+.field { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+fieldset.field { border: 0; padding: 0; margin: 0; }
+fieldset legend { padding: 0; margin-bottom: 8px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.row > .field { flex: 1 1 160px; }
+
+input[type="text"], input[type="date"], input[type="month"], select, textarea {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--grid-strong);
+  border-radius: 10px;
+}
+input[type="file"] { font: inherit; font-size: 0.95rem; max-width: 100%; color: var(--ink); }
+textarea { min-height: 84px; resize: vertical; font-family: var(--font-body); }
+#tempIn { font-family: var(--font-mono); font-size: 1.4rem; letter-spacing: 0.02em; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a.btn:focus-visible, summary:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.hint { font-size: 0.85rem; color: var(--muted); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { position: relative; }
+.chip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.chip label {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px;
+  border: 1px solid var(--grid-strong); border-radius: 10px; background: var(--surface);
+  cursor: pointer; font-size: 0.95rem;
+}
+.chip label b { font-family: var(--font-mono); font-weight: 600; font-size: 0.9em; }
+.chip input:checked + label { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 600; }
+.chip input:focus-visible + label { outline: 3px solid var(--accent); outline-offset: 2px; }
+.qgroup { display: flex; flex-direction: column; gap: 14px; padding: 14px; border: 1px solid var(--grid-strong); border-radius: 12px; background: var(--surface); }
+.qgroup .chip label { background: var(--bg); }
+.qgroup .chip input:checked + label { background: var(--ink); }
+
+button { font: inherit; cursor: pointer; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; text-decoration: none;
+  min-height: 46px; padding: 0 18px; border-radius: 10px; border: 1px solid var(--ink);
+  background: transparent; color: var(--ink); font-weight: 600; font-size: 1rem;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.danger { border-color: var(--bleed); color: var(--bleed); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.pill {
+  display: inline-flex; align-items: center; min-height: 46px; padding: 0 14px; border-radius: 10px;
+  background: var(--phase); font-family: var(--font-mono); font-size: 0.85rem;
+}
+.status { min-height: 1.4em; font-size: 0.92rem; }
+.status.err { color: var(--bleed); font-weight: 600; }
+.banner { background: var(--warn-bg); color: var(--warn-ink); padding: 10px 14px; border-radius: 10px; font-size: 0.9rem; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between; }
+.banner button { min-height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid currentColor; background: transparent; color: inherit; font-weight: 600; }
+
+.recent { display: flex; flex-direction: column; border-top: 1px solid var(--grid); }
+.rowbtn {
+  display: grid; grid-template-columns: 4.6rem 4.2rem 1fr; gap: 10px; align-items: center; text-align: left;
+  min-height: 48px; padding: 6px 2px; background: transparent; border: 0; border-bottom: 1px solid var(--grid); color: var(--ink);
+}
+.rowbtn .t { font-family: var(--font-mono); font-size: 0.9rem; }
+.rowbtn .d { font-size: 0.9rem; color: var(--muted); min-width: 0; overflow-wrap: anywhere; }
+
+.paper { background: var(--surface); border: 1px solid var(--grid-strong); border-radius: 12px; overflow-x: auto; }
+.paper svg { display: block; }
+.paper text { font-family: var(--font-mono); fill: var(--muted); font-size: 10px; }
+.paper text.rowlbl { font-size: 9px; letter-spacing: 0.08em; }
+.paper text.cov { fill: var(--accent); }
+.paper text.dnum, .paper text.xm, .paper text.obs { fill: var(--ink); }
+.paper text.obs { font-size: 12px; font-weight: 500; }
+.paper text.xm { font-size: 12px; }
+.paper text.q { font-size: 9px; }
+.paper text.qb { fill: var(--accent); font-weight: 600; }
+.paper text.num { fill: var(--accent); font-weight: 600; }
+.paper text.today { fill: var(--accent); font-weight: 600; }
+.g { stroke: var(--grid); stroke-width: 1; }
+.gs { stroke: var(--grid-strong); stroke-width: 1; }
+.bandfill { fill: var(--phase); opacity: 0.42; }
+.tline { stroke: var(--ink); stroke-width: 1.75; }
+.tline.gap { stroke-dasharray: 3 3; stroke-width: 1.25; }
+.pt { fill: var(--surface); stroke: var(--ink); stroke-width: 1.75; }
+.pt.shift { fill: var(--surface); stroke: var(--accent); }
+.ring { fill: none; stroke: var(--accent); stroke-width: 1.5; }
+.cover { stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 5 4; }
+.peakdot { fill: var(--ink); }
+.todaybox { fill: none; stroke: var(--accent); stroke-width: 1.5; }
+.col { fill: transparent; cursor: pointer; }
+.s-bleed { fill: var(--bleed); }
+.day-info { display: grid; grid-template-columns: 1fr; gap: 3px 16px; margin: 0; }
+.day-info dt { color: var(--muted); font-family: var(--font-mono); font-size: 0.8rem; }
+.day-info dd { margin: 0 0 8px; overflow-wrap: anywhere; white-space: pre-wrap; }
+.day-info .empty { color: var(--muted); }
+.day-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+@media (min-width: 520px) {
+  .day-info { grid-template-columns: minmax(140px, 0.7fr) 1.3fr; gap: 8px 16px; }
+  .day-info dd { margin: 0; }
+}
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 0.85rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend svg { flex: none; }
+details.key { border: 1px solid var(--grid-strong); border-radius: 12px; background: var(--surface); padding: 0 14px; }
+details.key summary { min-height: 46px; display: flex; align-items: center; cursor: pointer; font-family: var(--font-display); font-weight: 600; }
+details.key dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0 0 14px; font-size: 0.92rem; }
+details.key dt { font-family: var(--font-mono); font-weight: 600; }
+details.key dd { margin: 0; color: var(--muted); }
+details.key h3 { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 10px 0 8px; font-weight: 500; }
+.foot { font-size: 0.82rem; color: var(--muted); }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+.stat { display: flex; flex-direction: column; gap: 2px; }
+.stat b { font-family: var(--font-mono); font-size: 1.35rem; font-weight: 500; }
+.block { display: flex; flex-direction: column; gap: 10px; padding-top: 18px; border-top: 1px solid var(--grid-strong); }
+.steps { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 6px; font-size: 0.95rem; }
+.mono-area { font-family: var(--font-mono); font-size: 0.8rem; min-height: 120px; }
+
+.overlay {
+  position: fixed; inset: 0; z-index: 20; overflow-y: auto; background: var(--overlay);
+  padding: calc(16px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.ov-card { max-width: 760px; margin: 0 auto; background: var(--bg); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.ov-img { border: 1px solid var(--grid-strong); border-radius: 10px; overflow: hidden; background: #fff; min-height: 60px; }
+.ov-img img { display: block; width: 100%; height: auto; }
+
+nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+  display: flex; gap: 8px;
+  background: var(--surface); border-top: 1px solid var(--grid-strong);
+  padding: 8px max(16px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+nav button {
+  flex: 1; min-height: 48px; border-radius: 10px; border: 0; background: transparent; color: var(--muted);
+  font-family: var(--font-display); font-weight: 600; font-size: 1rem;
+}
+nav button[aria-current="page"] { background: var(--ink); color: var(--bg); }
+@media (min-width: 760px) { nav { justify-content: center; } nav button { max-width: 200px; } }
+@media (prefers-reduced-motion: no-preference) { .btn, .chip label { transition: background 0.12s, color 0.12s; } }
+.month-nav { display: grid; grid-template-columns: 48px 1fr 48px; gap: 8px; align-items: center; }
+.month-nav button { min-height: 48px; border: 1px solid var(--grid-strong); border-radius: 10px; background: var(--surface); color: var(--ink); font-size: 1.25rem; }
+.month-nav button:disabled { opacity: 0.45; cursor: default; }
+.month-name { text-align: center; font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; text-transform: capitalize; }
+.month-current { min-height: 40px; align-self: center; }
+</style>
+</head>
+<body>
+<noscript>
+  <div style="margin:16px auto;max-width:720px;padding:14px;background:#F6E9C9;color:#5B4410;border-radius:10px;font:16px/1.45 system-ui,sans-serif">
+    Diese Datei wurde wahrscheinlich in einer Dateivorschau geöffnet oder JavaScript ist deaktiviert. WhatsApp und iPhone-Dateivorschauen führen die Funktionen dieser HTML-Datei nicht zuverlässig aus. Öffne sie in einer Umgebung, die lokale HTML-Dateien mit JavaScript unterstützt, oder verwende eine sichere HTTPS-Webadresse. Die Registerkarten und Eingaben funktionieren nur mit aktiviertem JavaScript.
+  </div>
+</noscript>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Sympto-thermale Methode</span>
+    <h1>Zyklusblatt</h1>
+    <p class="sub">Deine Einträge bleiben in diesem Browser auf diesem Gerät. Nichts wird übertragen.</p>
+    <p class="hint">Wichtig auf dem iPhone: Wenn du den WhatsApp-Anhang antippst, öffnet sich nur die Vorschau; dort funktionieren Registerkarten und Eingaben nicht. „In Dateien sichern“ umgeht WhatsApp, aber auch die iPhone-Dateivorschau kann JavaScript blockieren. Für zuverlässige Nutzung öffne die Datei in einer App, die lokale HTML-Dateien mit JavaScript ausführt, oder nutze eine sichere HTTPS-Webadresse.</p>
+  </header>
+  <div class="banner" id="storeWarn" hidden="">Der Speicher ist in dieser Ansicht gesperrt. Einträge bleiben nur, bis du die Seite schließt. Sichere sie unter „Daten“.</div>
+
+  <!-- EINTRAG -->
+  <section class="panel" id="tab-today" aria-label="Tageseintrag">
+    <div class="banner" id="exBanner" hidden="">
+      <span>Du siehst Beispieldaten, damit du das Zyklusblatt ausprobieren kannst.</span>
+      <button type="button" id="clearEx">Beispiele löschen</button>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label class="lbl" for="dateIn">Datum</label>
+        <input type="date" id="dateIn">
+      </div>
+      <div class="pill" id="dayPill" aria-live="polite">Zyklustag -</div>
+    </div>
+    <div class="field">
+      <label class="lbl" for="tempIn">Aufwachtemperatur in °C</label>
+      <input type="text" id="tempIn" inputmode="decimal" autocomplete="off" placeholder="36,45">
+      <span class="hint">Immer zur gleichen Zeit messen, vor dem Aufstehen.</span>
+    </div>
+    <fieldset class="field">
+      <legend class="lbl">Zervixschleim: Beobachtung</legend>
+      <div class="chips" id="obsChips"><span class="chip"><input type="radio" name="obs" id="obs-x" value=""><label for="obs-x">Nicht notiert</label></span><span class="chip"><input type="radio" name="obs" id="obs-0" value="0"><label for="obs-0"><b>0</b>Nichts gesehen</label></span><span class="chip"><input type="radio" name="obs" id="obs-t" value="t"><label for="obs-t"><b>t</b>Trocken</label></span><span class="chip"><input type="radio" name="obs" id="obs-f" value="f"><label for="obs-f"><b>f</b>Feucht</label></span><span class="chip"><input type="radio" name="obs" id="obs-s" value="s"><label for="obs-s"><b>s</b>Schleim</label></span></div>
+    </fieldset>
+    <div class="qgroup" id="qGroup" hidden="">
+      <fieldset class="field">
+        <legend class="lbl">Schleimsymbole, weniger gute Qualität</legend>
+        <div class="chips" id="qWeak"><span class="chip"><input type="checkbox" name="q" id="q-w" value="w"><label for="q-w"><b>w</b>weißlich</label></span><span class="chip"><input type="checkbox" name="q" id="q-mi" value="mi"><label for="q-mi"><b>mi</b>milchig</label></span><span class="chip"><input type="checkbox" name="q" id="q-cr" value="cr"><label for="q-cr"><b>cr</b>cremig</label></span><span class="chip"><input type="checkbox" name="q" id="q-kl" value="kl"><label for="q-kl"><b>kl</b>klumpig</label></span><span class="chip"><input type="checkbox" name="q" id="q-g" value="g"><label for="q-g"><b>g</b>gelblich</label></span></div>
+      </fieldset>
+      <fieldset class="field">
+        <legend class="lbl">Schleimsymbole, beste Qualität</legend>
+        <div class="chips" id="qBest"><span class="chip"><input type="checkbox" name="q" id="q-ew" value="ew"><label for="q-ew"><b>ew</b>wie Eiklar</label></span><span class="chip"><input type="checkbox" name="q" id="q-gl" value="gl"><label for="q-gl"><b>gl</b>glasig, klar, dehnbar</label></span><span class="chip"><input type="checkbox" name="q" id="q-fdz" value="fdz"><label for="q-fdz"><b>fdz</b>fadenziehend</label></span><span class="chip"><input type="checkbox" name="q" id="q-fl" value="fl"><label for="q-fl"><b>fl</b>flüssig</label></span><span class="chip"><input type="checkbox" name="q" id="q-ns" value="ns"><label for="q-ns"><b>ns</b>nass</label></span></div>
+      </fieldset>
+    </div>
+    <fieldset class="field">
+      <legend class="lbl">Blutung</legend>
+      <div class="chips" id="bleedChips"><span class="chip"><input type="radio" name="bleed" id="bleed-none" value="none"><label for="bleed-none">Keine</label></span><span class="chip"><input type="radio" name="bleed" id="bleed-schmier" value="schmier"><label for="bleed-schmier">Schmierblutung</label></span><span class="chip"><input type="radio" name="bleed" id="bleed-schwach" value="schwach"><label for="bleed-schwach">Schwach</label></span><span class="chip"><input type="radio" name="bleed" id="bleed-mittel" value="mittel"><label for="bleed-mittel">Mittel</label></span><span class="chip"><input type="radio" name="bleed" id="bleed-stark" value="stark"><label for="bleed-stark">Stark</label></span></div>
+      <span class="hint">Eine schwache, mittlere oder starke Blutung nach einem Tag ohne Blutung ist der 1. Tag der Menstruation und beginnt ein neues Zyklusblatt. Eine Schmierblutung zählt nicht.</span>
+    </fieldset>
+    <div class="field">
+      <span class="lbl">Weiteres</span>
+      <div class="chips"><span class="chip"><input type="checkbox" id="xIn"><label for="xIn"><b>x</b> Geschlechtsverkehr</label></span></div>
+    </div>
+    <div class="field">
+      <label class="lbl" for="noteIn">Notiz</label>
+      <textarea id="noteIn" maxlength="500" placeholder="Krankheit, Reise, schlechter Schlaf, Alkohol ..."></textarea>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn primary" id="saveBtn">Tag speichern</button>
+      <button type="button" class="btn danger" id="delBtn" hidden="">Tag löschen</button>
+    </div>
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+    <div class="field">
+      <h2>Letzte Tage</h2>
+      <div class="recent" id="recent"></div>
+    </div>
+  </section>
+
+  <!-- ZYKLUSBLATT -->
+  <section class="panel" id="tab-chart" aria-label="Zyklusblatt" hidden="">
+    <div class="banner" id="exBanner2" hidden="">
+      <span>Du siehst Beispieldaten, damit du das Zyklusblatt ausprobieren kannst.</span>
+      <button type="button" id="clearEx2">Beispiele löschen</button>
+    </div>
+    <div class="field">
+      <span class="lbl">Monat anzeigen</span>
+      <div class="month-nav" aria-label="Monat auswählen">
+        <button type="button" id="prevMonth" aria-label="Vorheriger Monat">‹</button>
+        <span class="month-name" id="monthName" aria-live="polite"></span>
+        <button type="button" id="nextMonth" aria-label="Nächster Monat">›</button>
+      </div>
+      <button type="button" class="btn month-current" id="currentMonth">Aktueller Monat</button>
+    </div>
+    <p class="hint">Aktueller Monat wird zuerst angezeigt. Wähle einen früheren Monat, um Einträge anzusehen. Tippe auf einen Tag, um alle Details zu öffnen.</p>
+    <p id="chartSummary" class="sub"></p>
+    <div class="paper" id="chartBox" hidden=""></div>
+    <div class="actions"><button type="button" class="btn primary" id="imgBtn">Zyklusblatt als Bild speichern</button></div>
+    <div class="legend" id="legend" hidden=""></div>
+    <details class="key">
+      <summary>Zeichenerklärung</summary>
+      <h3>Beobachtung</h3>
+      <dl>
+        <dt>t</dt><dd>trocken</dd>
+        <dt>0</dt><dd>nichts gesehen</dd>
+        <dt>f</dt><dd>feucht</dd>
+        <dt>s</dt><dd>Schleim gesehen</dd>
+      </dl>
+      <h3>Schleim, weniger gute Qualität</h3>
+      <dl>
+        <dt>w</dt><dd>weißlich</dd>
+        <dt>mi</dt><dd>milchig</dd>
+        <dt>cr</dt><dd>cremig</dd>
+        <dt>kl</dt><dd>klumpig</dd>
+        <dt>g</dt><dd>gelblich</dd>
+      </dl>
+      <h3>Schleim, beste Qualität</h3>
+      <dl>
+        <dt>ew</dt><dd>wie Eiklar</dd>
+        <dt>gl</dt><dd>glasig, klar, dehnbar</dd>
+        <dt>fdz</dt><dd>fadenziehend</dd>
+        <dt>fl</dt><dd>flüssig</dd>
+        <dt>ns</dt><dd>nass</dd>
+      </dl>
+      <h3>Weitere Zeichen</h3>
+      <dl>
+        <dt>●</dt><dd>Schleimhöhepunkt: der letzte Tag des besten Schleims in der laufenden Schleimphase</dd>
+        <dt>○</dt><dd>erste höhere Messung, danach die weiteren höheren Messungen mit 2, 3 und gegebenenfalls 4</dd>
+        <dt>- - -</dt><dd>Basislinie durch die höchste der 6 tieferen Messungen</dd>
+        <dt>x</dt><dd>Geschlechtsverkehr</dd>
+      </dl>
+    </details>
+    <p class="foot">Tippe auf einen Tag, um alle Eintragsdetails zu sehen. Über „Eintrag bearbeiten“ kannst du sie ändern. Die Markierungen verwenden die Begriffe von INER. Die Auswertung ist hier stark vereinfacht: Sie prüft nur die Temperatur und verbindet sie nicht mit dem Schleim. Dieser Prototyp ersetzt weder einen Kurs noch eine Beratung und ist kein Mittel zur Empfängnisverhütung.</p>
+  </section>
+
+  <!-- DATEN -->
+  <section class="panel" id="tab-data" aria-label="Daten und Sicherung" hidden="">
+    <div class="stats" id="stats"></div>
+
+    <div class="block">
+      <h2>Wo liegen meine Daten?</h2>
+      <p class="sub">Einträge werden nur im Browser auf diesem Gerät gespeichert; es gibt keinen Server und keine automatische Synchronisierung. Zum Übertragen auf ein anderes Gerät speichere eine JSON-Sicherung und stelle sie dort wieder her. WhatsApp- und iPhone-Dateivorschauen können die interaktiven Funktionen sperren. Die JSON-Sicherung ist der Weg, Daten zwischen Geräten mitzunehmen.</p>
+    </div>
+
+    <div class="block">
+      <h2>Sicherung als JSON-Datei</h2>
+      <ol class="steps">
+        <li>„Sicherungsdatei speichern“ antippen. Die Datei heißt <code id="fileName">ner-zyklusblatt-JJJJ-MM-TT.json</code> und liegt danach im Download-Ordner. Auf dem iPhone fragt Safari, wo sie abgelegt werden soll, zum Beispiel in der Dateien-App.</li>
+        <li>Übertrage die JSON-Datei auf dein Handy, zum Beispiel über iCloud, Google Drive oder E-Mail.</li>
+        <li>Öffne dieselbe HTML-Datei dort im Browser und wähle die JSON-Datei unter „Wiederherstellen“ aus.</li>
+      </ol>
+      <div class="actions">
+        <button type="button" class="btn primary" id="dlBtn">Sicherungsdatei speichern</button>
+        <button type="button" class="btn" id="copyBtn">Sicherung kopieren</button>
+      </div>
+      <p class="hint">In Vorschau- und App-Fenstern ist das Speichern von Dateien oft gesperrt. Dann hilft „Sicherung kopieren“: Füge den Text in eine Notiz ein oder schicke ihn dir selbst.</p>
+      <div class="field" id="backupBox" hidden="">
+        <label class="lbl" for="backupText">Sicherungstext</label>
+        <textarea id="backupText" class="mono-area" readonly=""></textarea>
+      </div>
+    </div>
+
+    <div class="block">
+      <h2>Zyklusblatt als Bild</h2>
+      <p class="sub">Erzeugt ein PNG-Bild des gewählten Zyklus mit weißem Hintergrund, zum Beispiel für eine Beratung. Du kannst es als Datei laden oder das Bild lange drücken und in die Fotos sichern.</p>
+      <div class="actions"><button type="button" class="btn" id="imgBtn2">Zyklusblatt als Bild speichern</button></div>
+    </div>
+
+    <div class="block">
+      <h2>Wiederherstellen</h2>
+      <p class="sub">Beim Wiederherstellen werden die Einträge aus der Sicherung hinzugefügt. Tage, die es schon gibt, werden überschrieben. So kannst du Einträge vom Computer auf dein Handy übertragen oder zurückholen.</p>
+      <div class="field">
+        <label class="lbl" for="fileIn">Sicherungsdatei</label>
+        <input type="file" id="fileIn" accept=".json,application/json">
+      </div>
+      <div class="field">
+        <label class="lbl" for="restoreText">Oder Sicherungstext einfügen</label>
+        <textarea id="restoreText" class="mono-area" placeholder="{&quot;app&quot;:&quot;ner-zyklusblatt&quot;, ...}"></textarea>
+      </div>
+      <div class="actions"><button type="button" class="btn" id="restoreBtn">Aus Text wiederherstellen</button></div>
+    </div>
+
+    <div class="block">
+      <h2>September-2026-Beispiel bearbeiten</h2>
+      <p class="sub">Tippe im Zyklusblatt auf einen Beispieltag, ändere seinen Eintrag und speichere ihn. „Aktuelle Einträge als Beispiel speichern“ übernimmt das September-Beispiel und ersetzt darin die Tage, die du bearbeitet hast.</p>
+      <div class="actions">
+        <button type="button" class="btn" id="saveExampleBtn">Aktuelle Einträge als Beispiel speichern</button>
+        <button type="button" class="btn" id="downloadHtmlBtn">HTML mit Beispiel herunterladen</button>
+      </div>
+      <p class="hint">Die Änderungen werden in diesem Browser gespeichert. Der Download enthält die aktualisierten Beispieldaten; ersetze damit die bisherige HTML-Datei, wenn du sie dauerhaft aktualisieren möchtest.</p>
+    </div>
+
+    <div class="block">
+      <h2>Zurücksetzen</h2>
+      <div class="actions">
+        <button type="button" class="btn" id="loadEx">September-Beispiel laden</button>
+        <button type="button" class="btn danger" id="wipeBtn">Alle Einträge löschen</button>
+      </div>
+    </div>
+    <p class="status" id="dataStatus" role="status" aria-live="polite"></p>
+  </section>
+</div>
+
+<script type="application/json" id="exampleData">{
+  "2026-09-01": {
+    "t": 36.42,
+    "o": "",
+    "q": [],
+    "b": "mittel",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-02": {
+    "t": 36.38,
+    "o": "",
+    "q": [],
+    "b": "stark",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-03": {
+    "t": 36.45,
+    "o": "",
+    "q": [],
+    "b": "mittel",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-04": {
+    "t": 36.4,
+    "o": "",
+    "q": [],
+    "b": "schwach",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-05": {
+    "t": 36.47,
+    "o": "",
+    "q": [],
+    "b": "schmier",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-06": {
+    "t": 36.41,
+    "o": "t",
+    "q": [],
+    "b": "none",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-07": {
+    "t": 36.5,
+    "o": "t",
+    "q": [],
+    "b": "none",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-08": {
+    "t": 36.44,
+    "o": "t",
+    "q": [],
+    "b": "none",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-09": {
+    "t": null,
+    "o": "f",
+    "q": [],
+    "b": "none",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-10": {
+    "t": 36.46,
+    "o": "f",
+    "q": [],
+    "b": "none",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-11": {
+    "t": 36.39,
+    "o": "s",
+    "q": [
+      "w",
+      "cr"
+    ],
+    "b": "none",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-12": {
+    "t": 36.43,
+    "o": "s",
+    "q": [
+      "cr",
+      "gl"
+    ],
+    "b": "none",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-13": {
+    "t": 36.37,
+    "o": "s",
+    "q": [
+      "gl",
+      "fdz"
+    ],
+    "b": "none",
+    "x": false,
+    "n": "Klarer, dehnbarer Schleim am Nachmittag"
+  },
+  "2026-09-14": {
+    "t": 36.45,
+    "o": "s",
+    "q": [
+      "ew",
+      "fdz"
+    ],
+    "b": "none",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-15": {
+    "t": 36.42,
+    "o": "s",
+    "q": [
+      "cr"
+    ],
+    "b": "none",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-16": {
+    "t": 36.72,
+    "o": "f",
+    "q": [],
+    "b": "none",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-17": {
+    "t": 36.78,
+    "o": "f",
+    "q": [],
+    "b": "none",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-18": {
+    "t": 36.88,
+    "o": "t",
+    "q": [],
+    "b": "none",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-19": {
+    "t": 36.8,
+    "o": "t",
+    "q": [],
+    "b": "none",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-20": {
+    "t": 36.85,
+    "o": "t",
+    "q": [],
+    "b": "none",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-21": {
+    "t": 36.79,
+    "o": "t",
+    "q": [],
+    "b": "none",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-22": {
+    "t": 36.83,
+    "o": "t",
+    "q": [],
+    "b": "none",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-23": {
+    "t": 36.9,
+    "o": "t",
+    "q": [],
+    "b": "none",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-24": {
+    "t": 36.77,
+    "o": "t",
+    "q": [],
+    "b": "none",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-25": {
+    "t": 36.82,
+    "o": "t",
+    "q": [],
+    "b": "none",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-26": {
+    "t": 36.86,
+    "o": "t",
+    "q": [],
+    "b": "none",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-27": {
+    "t": 36.81,
+    "o": "t",
+    "q": [],
+    "b": "none",
+    "x": false,
+    "n": ""
+  },
+  "2026-09-28": {
+    "t": 36.84,
+    "o": "t",
+    "q": [],
+    "b": "none",
+    "x": false,
+    "n": ""
+  }
+}</script>
+
+<div class="overlay" id="imgOverlay" role="dialog" aria-modal="true" aria-label="Zyklusblatt als Bild" hidden="">
+  <div class="ov-card">
+    <h2>Zyklusblatt als Bild</h2>
+    <p class="sub">Handy: Bild lange drücken und „Bild sichern“ oder „Zu Fotos hinzufügen“ wählen. Computer: Rechtsklick, dann „Bild speichern unter“.</p>
+    <p class="status" id="imgMsg" role="status" aria-live="polite"></p>
+    <div class="ov-img"><img id="imgOut" alt="Zyklusblatt als Bild"></div>
+    <div class="actions">
+      <a class="btn primary" id="imgDl" href="#" download="zyklusblatt.png">PNG-Datei laden</a>
+      <button type="button" class="btn" id="imgClose">Schließen</button>
+    </div>
+    <p class="foot">Die Datei landet im Download-Ordner. Ist das Laden gesperrt, drücke einfach das Bild lange.</p>
+  </div>
+</div>
+
+<div class="overlay" id="dayOverlay" role="dialog" aria-modal="true" aria-labelledby="dayTitle" hidden="">
+  <div class="ov-card">
+    <div class="day-head">
+      <h2 id="dayTitle">Tageseintrag</h2>
+      <button type="button" class="btn" id="dayClose">Schließen</button>
+    </div>
+    <p class="sub" id="dayCycle"></p>
+    <dl class="day-info" id="dayInfo"></dl>
+    <div class="actions">
+      <button type="button" class="btn primary" id="dayEdit">Eintrag bearbeiten</button>
+    </div>
+  </div>
+</div>
+
+<nav aria-label="Bereiche">
+  <button type="button" data-tab="today" aria-current="page">Eintrag</button>
+  <button type="button" data-tab="chart">Zyklusblatt</button>
+  <button type="button" data-tab="data">Daten</button>
+</nav>
+
+<script>
+(function () {
+'use strict';
+
+/* ---------- Begriffe nach INER ---------- */
+const KEY = 'ner-zyklusblatt-v2';
+const EXAMPLE_KEY = 'ner-zyklusblatt-example-2026-09';
+const OBS = [['', 'Nicht notiert', ''], ['0', 'Nichts gesehen', '0'], ['t', 'Trocken', 't'], ['f', 'Feucht', 'f'], ['s', 'Schleim', 's']];
+const Q_WEAK = [['w', 'weißlich'], ['mi', 'milchig'], ['cr', 'cremig'], ['kl', 'klumpig'], ['g', 'gelblich']];
+const Q_BEST = [['ew', 'wie Eiklar'], ['gl', 'glasig, klar, dehnbar'], ['fdz', 'fadenziehend'], ['fl', 'flüssig'], ['ns', 'nass']];
+const BEST = Q_BEST.map(q => q[0]);
+const Q_ALL = Q_WEAK.concat(Q_BEST).map(q => q[0]);
+const Q_LABEL = Object.fromEntries(Q_WEAK.concat(Q_BEST));
+const OBS_LABEL = Object.fromEntries(OBS.map(o => [o[0], o[1]]));
+const BLEED = [['none', 'Keine'], ['schmier', 'Schmierblutung'], ['schwach', 'Schwach'], ['mittel', 'Mittel'], ['stark', 'Stark']];
+const BLEED_LABEL = Object.fromEntries(BLEED);
+const BLEED_ON = ['schwach', 'mittel', 'stark'];
+
+/* ---------- Datums-Helfer (ISO-Text, UTC-Rechnung) ---------- */
+const pad = n => String(n).padStart(2, '0');
+const toISO = d => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+const parseISO = s => { const [y, m, d] = s.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d)); };
+const addDays = (s, n) => { const d = parseISO(s); d.setUTCDate(d.getUTCDate() + n); return toISO(d); };
+const diffDays = (a, b) => Math.round((parseISO(a) - parseISO(b)) / 864e5);
+const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+const fmt = (s, o) => parseISO(s).toLocaleDateString('de-DE', Object.assign({ timeZone: 'UTC' }, o));
+const nf = (t, digits) => t.toFixed(digits === undefined ? 2 : digits).replace('.', ',');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/* ---------- Speicher ---------- */
+let S = { entries: {}, seeded: false };
+let storageOk = true;
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) { const o = JSON.parse(raw); if (o && o.entries) S = { entries: o.entries, seeded: !!o.seeded }; }
+  } catch (e) { storageOk = false; }
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { storageOk = false; }
+  const w = document.getElementById('storeWarn');
+  if (w) w.hidden = storageOk;
+}
+
+/* ---------- Beispieldaten ---------- */
+function exampleEntries() {
+  const stored = readCustomExample();
+  const source = exampleOverride || (stored ? JSON.parse(stored) : JSON.parse($('exampleData').textContent));
+  return Object.fromEntries(Object.entries(source)
+    .filter(([date]) => date >= '2026-09-01' && date < '2026-10-01')
+    .map(([date, entry]) => [date, { ...entry, ex: true }]));
+}
+
+/* ---------- Zyklus-Logik ---------- */
+function isStart(date, entries = S.entries) {
+  const e = entries[date];
+  if (!e || !BLEED_ON.includes(e.b)) return false;
+  const p = entries[addDays(date, -1)];
+  return !(p && BLEED_ON.includes(p.b));
+}
+function cycles() {
+  const ds = Object.keys(S.entries).sort();
+  const starts = ds.filter(isStart);
+  return starts.map((s, i) => {
+    const next = starts[i + 1];
+    const last = ds[ds.length - 1];
+    const end = next ? addDays(next, -1) : (last > todayISO() ? last : todayISO());
+    return { start: s, end, len: diffDays(end, s) + 1 };
+  });
+}
+function cycleDayFor(date, entries = S.entries) {
+  const starts = Object.keys(entries).filter(d => isStart(d, entries)).sort().filter(s => s <= date);
+  if (!starts.length) return null;
+  return diffDays(date, starts[starts.length - 1]) + 1;
+}
+/* Vereinfachte Temperaturauswertung: Basislinie durch die höchste der 6 tieferen Messungen.
+   Erste höhere Messung plus zwei weitere. Liegt die dritte nicht 0,2 °C über der Basislinie,
+   ist eine vierte höhere Messung nötig. Nur Prototyp, ohne Schleimregel. */
+function detectShift(cy, entries) {
+  const temps = [];
+  for (let i = 0; i < cy.len; i++) {
+    const e = entries[addDays(cy.start, i)];
+    temps.push(e && typeof e.t === 'number' ? e.t : null);
+  }
+  for (let i = 6; i < temps.length; i++) {
+    const prev = temps.slice(i - 6, i);
+    if (prev.some(v => v === null)) continue;
+    const hi = Math.max.apply(null, prev);
+    const a = temps[i], b = temps[i + 1], c = temps[i + 2], d = temps[i + 3];
+    if (a == null || b == null || c == null || !(a > hi) || !(b > hi) || !(c > hi)) continue;
+    if (c >= hi + 0.2 - 1e-9) return { first: i, confirm: i + 2, hi: hi, marks: [i, i + 1, i + 2] };
+    if (d != null && d > hi) return { first: i, confirm: i + 3, hi: hi, marks: [i, i + 1, i + 2, i + 3] };
+  }
+  return null;
+}
+/* Schleimhöhepunkt: letzter Tag mit bestem Schleim im Zyklus. Bestätigt, sobald der Folgetag
+   ohne besten Schleim eingetragen ist. */
+function hasBest(e) { return !!(e && e.q && e.q.some(s => BEST.includes(s))); }
+function detectPeak(cy, entries) {
+  let last = -1;
+  for (let i = 0; i < cy.len; i++) if (hasBest(entries[addDays(cy.start, i)])) last = i;
+  if (last < 0) return null;
+  const nxt = entries[addDays(cy.start, last + 1)];
+  return { idx: last, confirmed: !!nxt && !hasBest(nxt) };
+}
+/*LOGIC_END*/
+
+/* ---------- UI-Helfer ---------- */
+const $ = id => document.getElementById(id);
+let selectedMonth = '';
+let tab = 'today';
+let wipeTimer = null;
+let exampleOverride = null;
+let viewedDate = '';
+
+function say(msg, isErr) { const el = $('status'); el.textContent = msg; el.className = 'status' + (isErr ? ' err' : ''); }
+function sayData(msg, isErr) { const el = $('dataStatus'); el.textContent = msg; el.className = 'status' + (isErr ? ' err' : ''); }
+
+function buildChips() {
+  $('obsChips').innerHTML = OBS.map(([v, l, sym]) => {
+    const id = 'obs-' + (v || 'x');
+    return `<span class="chip"><input type="radio" name="obs" id="${id}" value="${v}"><label for="${id}">${sym ? `<b>${sym}</b>` : ''}${l}</label></span>`;
+  }).join('');
+  const qc = list => list.map(([v, l]) => `<span class="chip"><input type="checkbox" name="q" id="q-${v}" value="${v}"><label for="q-${v}"><b>${v}</b>${l}</label></span>`).join('');
+  $('qWeak').innerHTML = qc(Q_WEAK);
+  $('qBest').innerHTML = qc(Q_BEST);
+  $('bleedChips').innerHTML = BLEED.map(([v, l]) => {
+    const id = 'bleed-' + v;
+    return `<span class="chip"><input type="radio" name="bleed" id="${id}" value="${v}"><label for="${id}">${l}</label></span>`;
+  }).join('');
+}
+const getRadio = n => { const r = document.querySelector(`input[name="${n}"]:checked`); return r ? r.value : ''; };
+const setRadio = (n, v) => { const r = document.querySelector(`input[name="${n}"][value="${v}"]`); if (r) r.checked = true; };
+const getQ = () => Array.from(document.querySelectorAll('input[name="q"]:checked')).map(i => i.value);
+function setQ(list) { document.querySelectorAll('input[name="q"]').forEach(i => { i.checked = list.includes(i.value); }); }
+function syncQGroup() { $('qGroup').hidden = getRadio('obs') !== 's'; }
+
+function loadForm(date) {
+  const e = S.entries[date] || exampleEntries()[date];
+  $('tempIn').value = e && typeof e.t === 'number' ? nf(e.t) : '';
+  setRadio('obs', e ? e.o || '' : '');
+  setQ(e && e.q ? e.q : []);
+  setRadio('bleed', e ? e.b || 'none' : 'none');
+  $('xIn').checked = !!(e && e.x);
+  $('noteIn').value = e && e.n ? e.n : '';
+  $('delBtn').hidden = !S.entries[date];
+  syncQGroup();
+  const d = cycleDayFor(date);
+  $('dayPill').textContent = (d ? 'Zyklustag ' + d : 'Noch kein Zyklusbeginn') + ' · ' + fmt(date, { weekday: 'short', day: 'numeric', month: 'short' });
+}
+function gotoDate(date) {
+  $('dateIn').value = date;
+  loadForm(date);
+  say('');
+  setTab('today');
+}
+
+function onSave() {
+  const date = $('dateIn').value;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { say('Wähle zuerst ein Datum.', true); return; }
+  const raw = $('tempIn').value.trim().replace(',', '.');
+  let t = null;
+  if (raw !== '') {
+    t = Number(raw);
+    if (!isFinite(t) || t < 34 || t > 42) { say('Gib eine Temperatur zwischen 34 und 42 °C ein, zum Beispiel 36,45.', true); return; }
+    t = Math.round(t * 100) / 100;
+  }
+  const o = getRadio('obs');
+  const q = o === 's' ? getQ() : [];
+  const b = getRadio('bleed') || 'none';
+  const x = $('xIn').checked;
+  const n = $('noteIn').value.trim().slice(0, 500);
+  if (t === null && !o && b === 'none' && !x && !n) { say('Es gibt noch nichts zu speichern. Trage Temperatur, Schleim, Blutung oder eine Notiz ein.', true); return; }
+  S.entries[date] = { t, o, q, b, x, n };
+  selectedMonth = date.slice(0, 7);
+  save();
+  say('Gespeichert: ' + fmt(date, { weekday: 'short', day: 'numeric', month: 'short' }) + '.');
+  refresh(date);
+}
+function onDelete() {
+  const date = $('dateIn').value;
+  if (!S.entries[date]) return;
+  delete S.entries[date];
+  selectedMonth = date.slice(0, 7);
+  save();
+  say('Gelöscht: ' + fmt(date, { weekday: 'short', day: 'numeric', month: 'short' }) + '.');
+  refresh(date);
+}
+
+function renderRecent() {
+  const ds = Object.keys(S.entries).sort().reverse().slice(0, 6);
+  if (!ds.length) { $('recent').innerHTML = '<p class="sub" style="padding:12px 2px">Noch keine Einträge. Speichere oben deinen ersten Tag.</p>'; return; }
+  $('recent').innerHTML = ds.map(d => {
+    const e = S.entries[d];
+    const bits = [];
+    if (e.o) bits.push(e.o + (e.q && e.q.length ? ' ' + e.q.join(' ') : ''));
+    if (e.b && e.b !== 'none') bits.push(BLEED_LABEL[e.b]);
+    if (e.x) bits.push('x');
+    if (e.n) bits.push(esc(e.n));
+    return `<button type="button" class="rowbtn" data-date="${d}"><span class="mono">${fmt(d, { day: 'numeric', month: 'short' })}</span><span class="t">${typeof e.t === 'number' ? nf(e.t) : '-'}</span><span class="d">${bits.join(' · ') || '&nbsp;'}</span></button>`;
+  }).join('');
+}
+
+/* ---------- Zyklusblatt ---------- */
+function bleedSym(b, x, y) {
+  if (b === 'schmier') return `<circle cx="${x}" cy="${y}" r="2.5" class="s-bleed"/>`;
+  const h = { schwach: 8, mittel: 14, stark: 22 }[b];
+  return h ? `<rect x="${x - 6}" y="${y - h / 2}" width="12" height="${h}" rx="2" class="s-bleed"/>` : '';
+}
+function legendHTML() {
+  const i = inner => `<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">${inner}</svg>`;
+  return [
+    `<span>${i('<circle cx="11" cy="11" r="3.8" class="pt"/>')}Aufwachtemperatur</span>`,
+    `<span>${i('<circle cx="11" cy="11" r="3.8" class="pt shift"/><circle cx="11" cy="11" r="7.5" class="ring"/>')}Höhere Messungen</span>`,
+    `<span>${i('<line x1="1" x2="21" y1="11" y2="11" class="cover"/>')}Basislinie</span>`,
+    `<span>${i('<circle cx="11" cy="11" r="3.8" class="peakdot"/>')}Schleimhöhepunkt</span>`,
+    `<span>${i(bleedSym('schmier', 11, 11))}Schmierblutung</span>`,
+    `<span>${i(bleedSym('schwach', 5, 11) + bleedSym('mittel', 11, 11) + bleedSym('stark', 17, 11))}Schwach, mittel, stark</span>`
+  ].join('');
+}
+
+function monthView(month) {
+  const [year, monthNumber] = month.split('-').map(Number);
+  const start = `${month}-01`;
+  const len = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+  return { start, end: addDays(start, len - 1), len, month };
+}
+function selectedMonthView() {
+  return monthView(selectedMonth || todayISO().slice(0, 7));
+}
+function chartEntriesForMonth(month) {
+  const entries = {};
+  const sample = exampleEntries();
+  const sampleDates = Object.keys(sample).filter(date => date.slice(0, 7) === month);
+  sampleDates.forEach(date => { entries[date] = sample[date]; });
+  Object.keys(S.entries).forEach(date => { if (date.slice(0, 7) === month) entries[date] = S.entries[date]; });
+  const hasExample = sampleDates.some(date => !S.entries[date] || S.entries[date].ex);
+  return { entries, hasExample };
+}
+function buildChart(cy, exp, entries) {
+  const n = cy.len;
+  const today = todayISO();
+  const temps = [];
+  for (let i = 0; i < cy.len; i++) { const e = entries[addDays(cy.start, i)]; if (e && typeof e.t === 'number') temps.push(e.t); }
+  let loI = temps.length ? Math.floor(Math.min.apply(null, temps) * 10 + 1e-9) - 2 : 361;
+  let hiI = temps.length ? Math.ceil(Math.max.apply(null, temps) * 10 - 1e-9) + 2 : 371;
+  if (hiI - loI < 5) {
+    const extra = 5 - (hiI - loI);
+    loI -= Math.floor(extra / 2);
+    hiI += Math.ceil(extra / 2);
+  }
+  const steps = hiI - loI;
+  const cw = 22, left = 56, right = 14, top = 14, stepH = 24;
+  const plotH = steps * stepH, pb = top + plotH;
+  const rowEnd = pb + 114;
+  const W = left + n * cw + right, H = pb + 150;
+  const cx = d => left + d * cw + cw / 2;
+  const ty = t => top + ((hiI - t * 10) / steps) * plotH;
+  const shift = detectShift(cy, entries);
+  const peak = detectPeak(cy, entries);
+  const entryDays = Object.keys(entries).length;
+  const out = [];
+
+  if (shift) {
+    const x = left + shift.confirm * cw;
+    out.push(`<rect x="${x}" y="${top}" width="${left + n * cw - x}" height="${rowEnd - top}" class="bandfill"/>`);
+  }
+  for (let k = 0; k <= steps; k++) {
+    const y = top + k * stepH, v = hiI - k;
+    out.push(`<line x1="${left}" x2="${left + n * cw}" y1="${y}" y2="${y}" class="${v % 5 === 0 ? 'gs' : 'g'}"/>`);
+    out.push(`<text x="${left - 8}" y="${y + 3.5}" text-anchor="end">${nf(v / 10, 1)}</text>`);
+  }
+  for (let d = 0; d <= n; d++) {
+    const x = left + d * cw;
+    const date = addDays(cy.start, d);
+    const strong = d === 0 || (d < n && parseISO(date).getUTCDay() === 0);
+    out.push(`<line x1="${x}" x2="${x}" y1="${top}" y2="${rowEnd}" class="${strong ? 'gs' : 'g'}"/>`);
+  }
+  [pb, pb + 58, pb + 92, rowEnd].forEach(y => out.push(`<line x1="${left}" x2="${left + n * cw}" y1="${y}" y2="${y}" class="gs"/>`));
+  out.push(`<text x="${left - 8}" y="${pb + 28}" text-anchor="end" class="rowlbl">SCHLEIM</text>`);
+  out.push(`<text x="${left - 8}" y="${pb + 78}" text-anchor="end" class="rowlbl">BLUTUNG</text>`);
+  out.push(`<text x="${left - 8}" y="${pb + 107}" text-anchor="end" class="rowlbl">GV</text>`);
+  out.push(`<text x="${left - 8}" y="${pb + 134}" text-anchor="end" class="rowlbl">TAG</text>`);
+
+  const todayIdx = diffDays(today, cy.start);
+  if (!exp && todayIdx >= 0 && todayIdx < n) out.push(`<rect x="${left + todayIdx * cw}" y="${top}" width="${cw}" height="${rowEnd - top}" class="todaybox"/>`);
+
+  if (shift) {
+    const y = ty(shift.hi), x1 = left + (shift.first - 6) * cw, x2 = left + (shift.confirm + 1) * cw;
+    out.push(`<line x1="${x1}" x2="${x2}" y1="${y}" y2="${y}" class="cover"/>`);
+    out.push(`<text x="${x1 + 4}" y="${y - 5}" class="cov">Basislinie ${nf(shift.hi)}</text>`);
+  }
+
+  let prev = null;
+  const lines = [], dots = [];
+  for (let d = 0; d < n; d++) {
+    const date = addDays(cy.start, d), e = entries[date], x = cx(d);
+    out.push(`<text x="${x}" y="${pb + 134}" text-anchor="middle" class="dnum${!exp && date === today ? ' today' : ''}">${d + 1}</text>`);
+    if (!e) continue;
+    if (e.o) out.push(`<text x="${x}" y="${pb + 26}" text-anchor="middle" class="obs">${e.o}</text>`);
+    (e.q || []).slice(0, 3).forEach((s, k) => out.push(`<text x="${x}" y="${pb + 37 + k * 9}" text-anchor="middle" class="q${BEST.includes(s) ? ' qb' : ''}">${s}</text>`));
+    if (peak && peak.idx === d) out.push(`<circle cx="${x}" cy="${pb + 8}" r="3.8" class="peakdot"/>`);
+    if (e.b && e.b !== 'none') out.push(bleedSym(e.b, x, pb + 75));
+    if (e.x) out.push(`<text x="${x}" y="${pb + 107}" text-anchor="middle" class="xm">x</text>`);
+    if (typeof e.t === 'number') {
+      const y = ty(e.t);
+      if (prev) lines.push(`<line x1="${prev.x}" y1="${prev.y}" x2="${x}" y2="${y}" class="tline${prev.d === d - 1 ? '' : ' gap'}"/>`);
+      const k = shift ? shift.marks.indexOf(d) : -1;
+      dots.push(`<circle cx="${x}" cy="${y}" r="3.8" class="pt${k >= 0 ? ' shift' : ''}"/>`);
+      if (k === 0) dots.push(`<circle cx="${x}" cy="${y}" r="8" class="ring"/>`);
+      if (k >= 0) dots.push(`<text x="${x}" y="${y - 12}" text-anchor="middle" class="num">${k + 1}</text>`);
+      prev = { d: d, x: x, y: y };
+    }
+  }
+  out.push(lines.join(''), dots.join(''));
+
+  if (!exp) {
+    for (let d = 0; d < n; d++) {
+      const date = addDays(cy.start, d);
+      out.push(`<rect x="${left + d * cw}" y="${top}" width="${cw}" height="${H - top}" class="col" data-date="${date}" role="button" tabindex="0" aria-label="${fmt(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} – Details anzeigen"><title>${fmt(date, { weekday: 'short', day: 'numeric', month: 'short' })}</title></rect>`);
+    }
+  }
+  return { inner: out.join(''), W: W, H: H, shift: shift, peak: peak, logged: temps.length, entryDays };
+}
+
+function renderChart() {
+  const box = $('chartBox');
+  const currentMonth = todayISO().slice(0, 7);
+  if (!selectedMonth || selectedMonth > currentMonth) selectedMonth = currentMonth;
+  $('monthName').textContent = fmt(selectedMonth + '-01', { month: 'long', year: 'numeric' });
+  $('prevMonth').disabled = selectedMonth <= '1900-01';
+  $('nextMonth').disabled = selectedMonth >= currentMonth;
+  const cy = selectedMonthView();
+  const chartData = chartEntriesForMonth(cy.month);
+  const c = buildChart(cy, false, chartData.entries);
+  box.hidden = false; $('legend').hidden = false; $('imgBtn').disabled = false;
+  box.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${c.W}" height="${c.H}" viewBox="0 0 ${c.W} ${c.H}" role="img" aria-label="Zyklusblatt mit Aufwachtemperatur, Zervixschleim und Blutung für den gewählten Monat">${c.inner}</svg>`;
+  const label = fmt(cy.start, { month: 'long', year: 'numeric' });
+  let sum = c.entryDays
+    ? `${label}: ${c.entryDays} Tage mit Einträgen, ${c.logged} Aufwachtemperaturen. `
+    : `${label}: Keine Einträge in diesem Monat. Das Zyklusblatt bleibt leer. `;
+  if (chartData.hasExample) sum = `Beispieldaten · ${sum}`;
+  sum += c.shift
+    ? `Temperaturhochlage (vereinfacht): ${c.shift.marks.length} höhere Messungen über der Basislinie von ${nf(c.shift.hi)} °C, bestätigt an Monatstag ${c.shift.confirm + 1}. `
+    : c.entryDays ? 'Noch keine Temperaturhochlage erkennbar. ' : '';
+  if (c.peak) sum += `Schleimhöhepunkt: Monatstag ${c.peak.idx + 1}${c.peak.confirmed ? '' : ' (vorläufig)'}.`;
+  $('chartSummary').textContent = sum;
+  $('legend').innerHTML = legendHTML();
+}
+function shiftSelectedMonth(amount) {
+  const [year, month] = selectedMonth.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1 + amount, 1));
+  const next = `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}`;
+  const current = todayISO().slice(0, 7);
+  if (next >= '1900-01' && next <= current) selectedMonth = next;
+  renderChart();
+  scrollChart();
+}
+function scrollChart() {
+  const box = $('chartBox');
+  if (box.hidden || !box.clientWidth) return;
+  const cy = selectedMonthView();
+  const offset = cy.month === todayISO().slice(0, 7) ? diffDays(todayISO(), cy.start) : cy.len - 1;
+  const x = 56 + Math.max(0, offset) * 22;
+  box.scrollLeft = Math.max(0, x - box.clientWidth + 60);
+}
+function showDayDetails(date) {
+  viewedDate = date;
+  const example = exampleEntries()[date];
+  const entry = S.entries[date] || example || null;
+  const isExample = !!(example && (!S.entries[date] || S.entries[date].ex));
+  const day = cycleDayFor(date, isExample ? exampleEntries() : S.entries);
+  $('dayTitle').textContent = fmt(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  $('dayCycle').textContent = `${isExample ? 'Beispieleintrag · ' : ''}${day ? `Zyklustag ${day}` : 'Kein Zyklusbeginn erfasst'}`;
+  const rows = [
+    ['Temperatur', entry && typeof entry.t === 'number' ? `${nf(entry.t)} °C` : 'Nicht notiert'],
+    ['Schleim', entry && entry.o ? `${OBS_LABEL[entry.o] || entry.o}${entry.q && entry.q.length ? ` · ${entry.q.map(q => Q_LABEL[q] || q).join(', ')}` : ''}` : 'Nicht notiert'],
+    ['Blutung', entry && entry.b ? (BLEED_LABEL[entry.b] || 'Keine') : 'Keine'],
+    ['Geschlechtsverkehr', entry && entry.x ? 'Ja' : 'Nein'],
+    ['Notiz', entry && entry.n ? entry.n : 'Keine Notiz']
+  ];
+  $('dayInfo').innerHTML = rows.map(([label, value]) => `<dt>${esc(label)}</dt><dd${value === 'Nicht notiert' || value === 'Keine' || value === 'Nein' || value === 'Keine Notiz' ? ' class="empty"' : ''}>${esc(value)}</dd>`).join('');
+  $('dayEdit').disabled = date > todayISO();
+  $('dayEdit').textContent = date > todayISO() ? 'Noch nicht verfügbar' : 'Eintrag bearbeiten';
+  $('dayOverlay').hidden = false;
+  $('dayClose').focus();
+}
+function closeDayDetails() {
+  $('dayOverlay').hidden = true;
+}
+
+/* ---------- Bild-Export (PNG) ---------- */
+const P = { bg: '#FFFFFF', ink: '#15252E', muted: '#566B76', grid: '#CAD8DF', gs: '#98AFBA', accent: '#7B2D52', phase: '#D3ECE6', bleed: '#B0243C' };
+function exportCSS() {
+  return `text{font-family:ui-monospace,Menlo,Consolas,"Courier New",monospace;fill:${P.muted};font-size:10px}
+text.ttl{fill:${P.ink};font-size:16px;font-weight:700}text.rowlbl{font-size:9px;letter-spacing:.08em}text.cov{fill:${P.accent}}
+text.dnum,text.xm,text.obs{fill:${P.ink}}text.obs{font-size:12px}text.xm{font-size:12px}
+text.q{font-size:9px}text.qb{fill:${P.accent};font-weight:700}text.num{fill:${P.accent};font-weight:700}
+.g{stroke:${P.grid};stroke-width:1}.gs{stroke:${P.gs};stroke-width:1}
+.tline{stroke:${P.ink};stroke-width:1.75}.tline.gap{stroke-dasharray:3 3;stroke-width:1.25}
+.pt{fill:${P.bg};stroke:${P.ink};stroke-width:1.75}.pt.shift{fill:${P.accent};stroke:${P.accent}}
+.ring{fill:none;stroke:${P.accent};stroke-width:1.5}.cover{stroke:${P.accent};stroke-width:1.5;stroke-dasharray:5 4}
+.peakdot{fill:${P.ink}}.s-bleed{fill:${P.bleed}}`;
+}
+function openImage() {
+  const cy = selectedMonthView();
+  const chartData = chartEntriesForMonth(cy.month);
+  const c = buildChart(cy, true, chartData.entries);
+  const headH = 40, footH = 40;
+  const W = c.W, H = c.H + headH + footH;
+  const title = `Zyklusblatt ${fmt(cy.start, { month: 'long', year: 'numeric' })}`;
+  const keyLine = 't trocken · 0 nichts gesehen · f feucht · s Schleim · ● Schleimhöhepunkt · ○ erste höhere Messung · x Geschlechtsverkehr';
+  const foot = `Erstellt am ${fmt(todayISO(), { day: 'numeric', month: 'long', year: 'numeric' })} mit dem NER Zyklusblatt (Prototyp)`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><style>${exportCSS()}</style><rect width="${W}" height="${H}" fill="${P.bg}"/><text x="16" y="26" class="ttl">${esc(title)}</text><g transform="translate(0,${headH})">${c.inner}</g><text x="16" y="${H - 22}">${esc(keyLine)}</text><text x="16" y="${H - 8}">${esc(foot)}</text></svg>`;
+  $('imgOverlay').hidden = false;
+  $('imgOut').removeAttribute('src');
+  $('imgMsg').className = 'status';
+  $('imgMsg').textContent = 'Das Bild wird erstellt ...';
+  const fail = () => { $('imgMsg').className = 'status err'; $('imgMsg').textContent = 'Das Bild konnte nicht erstellt werden. Mache stattdessen einen Bildschirmfoto des Zyklusblatts.'; };
+  try {
+    const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }));
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const sc = 2, cv = document.createElement('canvas');
+        cv.width = W * sc; cv.height = H * sc;
+        const ctx = cv.getContext('2d');
+        ctx.fillStyle = P.bg; ctx.fillRect(0, 0, cv.width, cv.height);
+        ctx.scale(sc, sc); ctx.drawImage(img, 0, 0);
+        URL.revokeObjectURL(url);
+        const data = cv.toDataURL('image/png');
+        $('imgOut').src = data;
+        $('imgDl').href = data;
+        $('imgDl').setAttribute('download', `ner-zyklusblatt-${cy.month}.png`);
+        $('imgMsg').textContent = '';
+      } catch (e) { fail(); }
+    };
+    img.onerror = fail;
+    img.src = url;
+  } catch (e) { fail(); }
+}
+function closeImage() { $('imgOverlay').hidden = true; }
+
+/* ---------- Daten ---------- */
+function renderData() {
+  const ds = Object.keys(S.entries).sort();
+  const st = [
+    ['Tage erfasst', ds.length],
+    ['Zyklen', cycles().length],
+    ['Erster Tag', ds.length ? fmt(ds[0], { day: 'numeric', month: 'short', year: '2-digit' }) : '-']
+  ];
+  $('stats').innerHTML = st.map(([l, v]) => `<div class="stat"><span class="lbl">${l}</span><b>${esc(v)}</b></div>`).join('');
+  $('fileName').textContent = `ner-zyklusblatt-${todayISO()}.json`;
+}
+function backupJSON() {
+  return JSON.stringify({ app: 'ner-zyklusblatt', version: 2, exportiert: todayISO(), entries: S.entries }, null, 1);
+}
+function showBackupText() {
+  const ta = $('backupText');
+  ta.value = backupJSON();
+  $('backupBox').hidden = false;
+  return ta;
+}
+function onDownload() {
+  const name = `ner-zyklusblatt-${todayISO()}.json`;
+  showBackupText();
+  try {
+    const url = URL.createObjectURL(new Blob([backupJSON()], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+    sayData(`Wenn dein Browser den Download erlaubt, liegt „${name}“ jetzt im Download-Ordner. Passiert nichts, kopiere den Sicherungstext unten.`);
+  } catch (e) {
+    sayData('Das Speichern einer Datei ist hier nicht möglich. Kopiere den Sicherungstext unten.', true);
+  }
+}
+function onCopy() {
+  const ta = showBackupText();
+  const fallback = () => { ta.focus(); ta.select(); sayData('Kopieren wurde blockiert. Der Sicherungstext ist markiert: Nutze die Kopierfunktion deines Geräts.'); };
+  try {
+    navigator.clipboard.writeText(ta.value).then(() => sayData('Sicherung kopiert. Füge sie in eine Notiz ein oder schicke sie dir selbst.'), fallback);
+  } catch (e) { fallback(); }
+}
+function importText(text) {
+  let o;
+  try { o = JSON.parse(text); } catch (e) { sayData('Das ist keine gültige Sicherung. Füge den ganzen Text ein, beginnend mit der ersten geschweiften Klammer.', true); return; }
+  if (!o || typeof o.entries !== 'object' || o.entries === null) { sayData('In dieser Sicherung wurden keine Einträge gefunden.', true); return; }
+  let ok = 0, bad = 0;
+  Object.keys(o.entries).forEach(d => {
+    const e = o.entries[d];
+    const valid = /^\d{4}-\d{2}-\d{2}$/.test(d) && e && typeof e === 'object' &&
+      (e.t === null || e.t === undefined || (typeof e.t === 'number' && e.t >= 34 && e.t <= 42)) &&
+      (e.o === undefined || e.o === '' || OBS_LABEL[e.o] !== undefined) &&
+      (e.q === undefined || (Array.isArray(e.q) && e.q.every(s => Q_ALL.includes(s)))) &&
+      (e.b === undefined || BLEED_LABEL[e.b] !== undefined);
+    if (!valid) { bad++; return; }
+    S.entries[d] = { t: typeof e.t === 'number' ? e.t : null, o: e.o || '', q: e.q || [], b: e.b || 'none', x: !!e.x, n: typeof e.n === 'string' ? e.n.slice(0, 500) : '' };
+    ok++;
+  });
+  save();
+  refresh($('dateIn').value);
+  sayData(`${ok} Tage wiederhergestellt${bad ? `, ${bad} nicht lesbare übersprungen` : ''}.`, ok === 0);
+}
+function onFile(ev) {
+  const f = ev.target.files && ev.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => importText(String(r.result));
+  r.onerror = () => sayData('Die Datei konnte nicht gelesen werden.', true);
+  r.readAsText(f);
+  ev.target.value = '';
+}
+function onLoadEx() {
+  try {
+    const ex = exampleEntries();
+    let add = 0;
+    Object.keys(ex).forEach(d => { if (!S.entries[d]) { S.entries[d] = ex[d]; add++; } });
+    save(); refresh($('dateIn').value);
+    sayData(add ? `${add} Beispieltage hinzugefügt.` : 'Die Beispieltage sind schon da oder durch eigene Einträge ersetzt.');
+  } catch (e) {
+    sayData('Das September-Beispiel konnte nicht geladen werden.', true);
+  }
+}
+function readCustomExample() {
+  try {
+    return localStorage.getItem(EXAMPLE_KEY);
+  } catch (e) {
+    storageOk = false;
+    $('storeWarn').hidden = false;
+    return null;
+  }
+}
+function cleanExampleEntry(e) {
+  return {
+    t: typeof e.t === 'number' ? e.t : null,
+    o: e.o || '',
+    q: Array.isArray(e.q) ? e.q : [],
+    b: e.b || 'none',
+    x: !!e.x,
+    n: typeof e.n === 'string' ? e.n.slice(0, 500) : ''
+  };
+}
+function setEmbeddedExample(entries) {
+  const safeJSON = JSON.stringify(entries, null, 2).replace(/</g, '\\u003c');
+  $('exampleData').textContent = safeJSON;
+}
+function makeExampleHTML(entries) {
+  const exported = document.documentElement.cloneNode(true);
+  const byId = id => exported.querySelector('#' + id);
+  byId('exampleData').textContent = JSON.stringify(entries, null, 2).replace(/</g, '\\u003c');
+  ['tab-chart', 'tab-data', 'qGroup', 'imgOverlay', 'dayOverlay', 'backupBox', 'exBanner', 'exBanner2', 'storeWarn', 'delBtn'].forEach(id => byId(id).hidden = true);
+  byId('tab-today').hidden = false;
+  byId('dateIn').removeAttribute('max');
+  byId('dateIn').removeAttribute('value');
+  byId('dateIn').value = '';
+  byId('tempIn').removeAttribute('value');
+  byId('tempIn').value = '';
+  byId('noteIn').textContent = '';
+  byId('noteIn').value = '';
+  exported.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(el => { el.checked = false; el.removeAttribute('checked'); });
+  byId('dayPill').textContent = 'Zyklustag -';
+  byId('status').textContent = '';
+  byId('recent').textContent = '';
+  byId('stats').textContent = '';
+  byId('monthName').textContent = '';
+  byId('chartSummary').textContent = '';
+  byId('chartBox').textContent = '';
+  byId('chartBox').hidden = true;
+  byId('legend').textContent = '';
+  byId('legend').hidden = true;
+  byId('dataStatus').textContent = '';
+  byId('backupText').textContent = '';
+  byId('backupText').value = '';
+  byId('restoreText').textContent = '';
+  byId('restoreText').value = '';
+  byId('imgMsg').textContent = '';
+  byId('dayTitle').textContent = 'Tageseintrag';
+  byId('dayCycle').textContent = '';
+  byId('dayInfo').textContent = '';
+  byId('imgOut').removeAttribute('src');
+  byId('imgDl').setAttribute('href', '#');
+  byId('imgDl').setAttribute('download', 'zyklusblatt.png');
+  byId('fileName').textContent = 'ner-zyklusblatt-JJJJ-MM-TT.json';
+  byId('saveBtn').textContent = 'Tag speichern';
+  byId('dataStatus').className = 'status';
+  byId('status').className = 'status';
+  exported.querySelectorAll('[aria-current]').forEach(el => el.removeAttribute('aria-current'));
+  exported.querySelector('nav [data-tab="today"]').setAttribute('aria-current', 'page');
+  exported.querySelectorAll('input[checked]').forEach(el => el.removeAttribute('checked'));
+  return '<!doctype html>\n' + exported.outerHTML;
+}
+function onSaveExample() {
+  const start = '2026-09-01', end = '2026-10-01';
+  const example = {};
+  Object.entries(exampleEntries()).forEach(([date, entry]) => {
+    if (date >= start && date < end) example[date] = cleanExampleEntry(entry);
+  });
+  const dates = Object.keys(S.entries).filter(d => d >= start && d < end).sort();
+  if (!dates.length) {
+    sayData('Keine September-Einträge gefunden. Lade das Beispiel oder speichere zuerst einen September-Tag.', true);
+    return;
+  }
+  dates.forEach(d => { example[d] = cleanExampleEntry(S.entries[d]); });
+  const exampleDates = Object.keys(example);
+  let stored = true;
+  try {
+    localStorage.setItem(EXAMPLE_KEY, JSON.stringify(example));
+  } catch (e) {
+    storageOk = false;
+    $('storeWarn').hidden = false;
+    stored = false;
+  }
+  exampleOverride = example;
+  setEmbeddedExample(example);
+  dates.forEach(d => { S.entries[d].ex = true; });
+  save();
+  refresh($('dateIn').value);
+  sayData(stored
+    ? `September-Beispiel mit ${exampleDates.length} Tagen gespeichert. Lade das HTML herunter, damit die Änderungen auch auf anderen Geräten enthalten sind.`
+    : `September-Beispiel mit ${exampleDates.length} Tagen übernommen. Der Browser speichert es nicht dauerhaft; lade das HTML herunter, damit die Änderungen erhalten bleiben.`);
+}
+function onDownloadHtml() {
+  try {
+    const stored = readCustomExample();
+    const example = exampleOverride || (stored ? JSON.parse(stored) : JSON.parse($('exampleData').textContent));
+    const html = makeExampleHTML(example);
+    const url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'NER Zyklusblatt.html';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+    sayData('Das aktualisierte HTML wurde heruntergeladen. Ersetze damit die bisherige Datei, damit das neue Beispiel eingebettet bleibt.');
+  } catch (e) {
+    sayData('Das aktualisierte HTML konnte nicht erstellt werden.', true);
+  }
+}
+function onClearEx() {
+  Object.keys(S.entries).forEach(d => { if (S.entries[d].ex) delete S.entries[d]; });
+  save(); refresh($('dateIn').value);
+}
+function onWipe() {
+  const b = $('wipeBtn');
+  if (!wipeTimer) {
+    b.textContent = 'Nochmal tippen zum Löschen';
+    wipeTimer = setTimeout(() => { wipeTimer = null; b.textContent = 'Alle Einträge löschen'; }, 4000);
+    return;
+  }
+  clearTimeout(wipeTimer); wipeTimer = null;
+  b.textContent = 'Alle Einträge löschen';
+  S.entries = {}; save(); refresh($('dateIn').value);
+  sayData('Alle Einträge wurden gelöscht.');
+}
+
+/* ---------- Navigation ---------- */
+function setTab(name) {
+  tab = name;
+  ['today', 'chart', 'data'].forEach(t => { $('tab-' + t).hidden = t !== name; });
+  document.querySelectorAll('nav button').forEach(b => {
+    if (b.dataset.tab === name) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
+  if (name === 'chart') scrollChart();
+  window.scrollTo(0, 0);
+}
+function refresh(date) {
+  const hasEx = Object.keys(S.entries).some(d => S.entries[d].ex);
+  $('exBanner').hidden = !hasEx; $('exBanner2').hidden = !hasEx;
+  loadForm(date);
+  renderRecent(); renderChart(); renderData();
+  if (tab === 'chart') scrollChart();
+}
+
+/* ---------- Start ---------- */
+load();
+save();
+buildChips();
+const today = todayISO();
+selectedMonth = today.slice(0, 7);
+$('dateIn').max = today;
+$('dateIn').value = today;
+$('prevMonth').addEventListener('click', () => shiftSelectedMonth(-1));
+$('nextMonth').addEventListener('click', () => shiftSelectedMonth(1));
+$('currentMonth').addEventListener('click', () => {
+  selectedMonth = todayISO().slice(0, 7);
+  renderChart();
+  scrollChart();
+});
+$('dateIn').addEventListener('change', () => { const d = $('dateIn').value; if (d) { loadForm(d); say(''); } });
+$('obsChips').addEventListener('change', syncQGroup);
+$('saveBtn').addEventListener('click', onSave);
+$('delBtn').addEventListener('click', onDelete);
+$('recent').addEventListener('click', e => { const b = e.target.closest('[data-date]'); if (b) gotoDate(b.dataset.date); });
+$('chartBox').addEventListener('click', e => { const c = e.target.closest('[data-date]'); if (c) showDayDetails(c.getAttribute('data-date')); });
+$('chartBox').addEventListener('keydown', e => {
+  const c = e.target.closest('[data-date]');
+  if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); showDayDetails(c.getAttribute('data-date')); }
+});
+$('imgBtn').addEventListener('click', openImage);
+$('imgBtn2').addEventListener('click', openImage);
+$('imgClose').addEventListener('click', closeImage);
+$('dayClose').addEventListener('click', closeDayDetails);
+$('dayOverlay').addEventListener('click', e => { if (e.target === $('dayOverlay')) closeDayDetails(); });
+$('dayEdit').addEventListener('click', () => { const date = viewedDate; closeDayDetails(); gotoDate(date); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !$('imgOverlay').hidden) closeImage();
+  if (e.key === 'Escape' && !$('dayOverlay').hidden) closeDayDetails();
+});
+$('dlBtn').addEventListener('click', onDownload);
+$('copyBtn').addEventListener('click', onCopy);
+$('restoreBtn').addEventListener('click', () => importText($('restoreText').value));
+$('fileIn').addEventListener('change', onFile);
+$('loadEx').addEventListener('click', onLoadEx);
+$('saveExampleBtn').addEventListener('click', onSaveExample);
+$('downloadHtmlBtn').addEventListener('click', onDownloadHtml);
+$('wipeBtn').addEventListener('click', onWipe);
+$('clearEx').addEventListener('click', onClearEx);
+$('clearEx2').addEventListener('click', onClearEx);
+document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+refresh(today);
+})();
+</script>
+
+</body></html>
