@@ -19,6 +19,13 @@
   --accent: #7B2D52;
   --accent-ink: #FFFFFF;
   --phase: #D3ECE6;
+  --temp-bg: #DDF0DD;
+  --temp-ink: #254B2B;
+  --heart: #D63375;
+  --bleed-soft: #FBE3E8;
+  --bleed-soft-ink: #84263D;
+  --mucus-bg: #F9E5EF;
+  --mucus-ink: #76264A;
   --bleed: #B0243C;
   --warn-bg: #F6E9C9;
   --warn-ink: #5B4410;
@@ -35,6 +42,13 @@
     --accent: #E39BB8;
     --accent-ink: #2A0F1B;
     --phase: #173A37;
+    --temp-bg: #24412D;
+    --temp-ink: #D8EEDB;
+    --heart: #F28CB5;
+    --bleed-soft: #43252E;
+    --bleed-soft-ink: #FFC2D0;
+    --mucus-bg: #402638;
+    --mucus-ink: #F5C1D8;
     --bleed: #F0788C;
     --warn-bg: #3A3014;
     --warn-ink: #F0DDA6;
@@ -52,6 +66,13 @@
   --accent: #E39BB8;
   --accent-ink: #2A0F1B;
   --phase: #173A37;
+  --temp-bg: #24412D;
+  --temp-ink: #D8EEDB;
+  --heart: #F28CB5;
+  --bleed-soft: #43252E;
+  --bleed-soft-ink: #FFC2D0;
+  --mucus-bg: #402638;
+  --mucus-ink: #F5C1D8;
   --bleed: #F0788C;
   --warn-bg: #3A3014;
   --warn-ink: #F0DDA6;
@@ -236,6 +257,39 @@ nav button[aria-current="page"] { background: var(--ink); color: var(--bg); }
 .month-nav button:disabled { opacity: 0.45; cursor: default; }
 .month-name { text-align: center; font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; text-transform: capitalize; }
 .month-current { min-height: 40px; align-self: center; }
+.calendar-weekdays, .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.calendar-weekdays { text-align: center; font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); }
+.calendar-weekdays span { padding: 4px 0; }
+.calendar-grid { grid-auto-rows: minmax(64px, auto); }
+.cal-day {
+  min-width: 0; padding: 5px 2px; border: 1px solid var(--grid); border-radius: 8px;
+  background: var(--surface); color: var(--ink); display: flex; flex-direction: column;
+  align-items: center; gap: 3px;
+}
+.cal-day:disabled { opacity: 1; cursor: pointer; }
+.cal-day.cal-bleed { background: var(--bleed-soft); color: var(--bleed-soft-ink); border-color: var(--bleed-soft-ink); }
+.cal-day.cal-mucus { background: var(--mucus-bg); color: var(--mucus-ink); border-color: var(--mucus-ink); }
+.cal-day.cal-temp { background: var(--temp-bg); color: var(--temp-ink); border-color: var(--temp-ink); }
+.cal-day.cal-temp.cal-mucus { background: linear-gradient(135deg, var(--temp-bg) 50%, var(--mucus-bg) 50%); }
+.cal-day.cal-bleed.cal-mucus, .cal-day.cal-bleed.cal-temp { background: var(--bleed-soft); color: var(--bleed-soft-ink); border-color: var(--bleed-soft-ink); }
+.cal-day.cal-today { outline: 2px solid var(--accent); outline-offset: 1px; }
+.cal-day.cal-empty { border-color: transparent; background: transparent; }
+.cal-date { font-family: var(--font-mono); font-size: 0.9rem; line-height: 1.2; }
+.cal-markers { min-height: 1.2em; display: flex; justify-content: center; flex-wrap: wrap; gap: 2px; }
+.cal-marker { font-family: var(--font-mono); font-size: 0.62rem; line-height: 1.2; font-weight: 700; }
+.cal-marker.heart { color: var(--heart); font-family: system-ui, sans-serif; font-size: 0.8rem; }
+.calendar-key { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 0.85rem; color: var(--muted); }
+.calendar-key span { display: inline-flex; align-items: center; gap: 6px; }
+.calendar-swatch { width: 14px; height: 14px; border: 1px solid var(--grid-strong); border-radius: 4px; }
+.calendar-swatch.bleed { background: var(--bleed-soft); border-color: var(--bleed-soft-ink); }
+.calendar-swatch.mucus { background: var(--mucus-bg); border-color: var(--mucus-ink); }
+.calendar-swatch.temp { background: var(--temp-bg); border-color: var(--temp-ink); }
+@media (max-width: 380px) {
+  .calendar-weekdays, .calendar-grid { gap: 2px; }
+  .calendar-grid { grid-auto-rows: minmax(58px, auto); }
+  .cal-day { padding-inline: 0; }
+  .cal-marker { font-size: 0.58rem; }
+}
 </style>
 </head>
 <body>
@@ -250,7 +304,6 @@ nav button[aria-current="page"] { background: var(--ink); color: var(--bg); }
     <span class="eyebrow">Sympto-thermale Methode</span>
     <h1>Zyklusblatt</h1>
     <p class="sub">Deine Einträge bleiben in diesem Browser auf diesem Gerät. Nichts wird übertragen.</p>
-    <p class="hint">Wichtig auf dem iPhone: Wenn du den WhatsApp-Anhang antippst, öffnet sich nur die Vorschau; dort funktionieren Registerkarten und Eingaben nicht. „In Dateien sichern“ umgeht WhatsApp, aber auch die iPhone-Dateivorschau kann JavaScript blockieren. Für zuverlässige Nutzung öffne die Datei in einer App, die lokale HTML-Dateien mit JavaScript ausführt, oder nutze eine sichere HTTPS-Webadresse.</p>
   </header>
   <div class="banner" id="storeWarn" hidden="">Der Speicher ist in dieser Ansicht gesperrt. Einträge bleiben nur, bis du die Seite schließt. Sichere sie unter „Daten“.</div>
 
@@ -364,6 +417,33 @@ nav button[aria-current="page"] { background: var(--ink); color: var(--bg); }
       </dl>
     </details>
     <p class="foot">Tippe auf einen Tag, um alle Eintragsdetails zu sehen. Über „Eintrag bearbeiten“ kannst du sie ändern. Die Markierungen verwenden die Begriffe von INER. Die Auswertung ist hier stark vereinfacht: Sie prüft nur die Temperatur und verbindet sie nicht mit dem Schleim. Dieser Prototyp ersetzt weder einen Kurs noch eine Beratung und ist kein Mittel zur Empfängnisverhütung.</p>
+  </section>
+
+  <!-- KALENDER -->
+  <section class="panel" id="tab-calendar" aria-label="Kalender" hidden="">
+    <div class="field">
+      <span class="lbl">Monat anzeigen</span>
+      <div class="month-nav" aria-label="Kalendermonat auswählen">
+        <button type="button" id="calendarPrevMonth" aria-label="Vorheriger Monat">‹</button>
+        <span class="month-name" id="calendarMonthName" aria-live="polite"></span>
+        <button type="button" id="calendarNextMonth" aria-label="Nächster Monat">›</button>
+      </div>
+      <button type="button" class="btn month-current" id="calendarCurrentMonth">Aktueller Monat</button>
+    </div>
+    <p class="hint">Der Kalender zeigt nur eingetragene Beobachtungen. Er sagt keine fruchtbaren oder unfruchtbaren Tage voraus und bestimmt keinen genauen Ovulationstag. Tippe auf einen Tag für Details.</p>
+    <p id="calendarSummary" class="sub" aria-live="polite"></p>
+    <div class="calendar-weekdays" aria-hidden="true">
+      <span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span>
+    </div>
+    <div class="calendar-grid" id="calendarGrid" aria-label="Tage des Monats"></div>
+    <div class="calendar-key" aria-label="Kalenderzeichenerklärung">
+      <span><i class="calendar-swatch bleed" aria-hidden="true"></i>Menstruation (M)</span>
+      <span><i class="calendar-swatch mucus" aria-hidden="true"></i>Feucht/Schleim beobachtet, mögliches Fruchtbarkeitszeichen (S)</span>
+      <span><i class="calendar-swatch temp" aria-hidden="true"></i>Vereinfachte Temperaturhochlage bis zur nächsten Menstruation</span>
+      <span><b class="cal-marker">H</b>Schleimhöhepunkt (beobachtet)</span>
+      <span><b class="cal-marker">T</b>Temperaturhochlage (vereinfacht; keine Aussage zu unfruchtbaren Tagen)</span>
+      <span><b class="cal-marker heart" aria-hidden="true">♥</b>Geschlechtsverkehr eingetragen</span>
+    </div>
   </section>
 
   <!-- DATEN -->
@@ -706,6 +786,7 @@ nav button[aria-current="page"] { background: var(--ink); color: var(--bg); }
 <nav aria-label="Bereiche">
   <button type="button" data-tab="today" aria-current="page">Eintrag</button>
   <button type="button" data-tab="chart">Zyklusblatt</button>
+  <button type="button" data-tab="calendar">Kalender</button>
   <button type="button" data-tab="data">Daten</button>
 </nav>
 
@@ -819,6 +900,7 @@ function detectPeak(cy, entries) {
 /* ---------- UI-Helfer ---------- */
 const $ = id => document.getElementById(id);
 let selectedMonth = '';
+let selectedCalendarMonth = '';
 let tab = 'today';
 let wipeTimer = null;
 let exampleOverride = null;
@@ -939,6 +1021,18 @@ function monthView(month) {
 function selectedMonthView() {
   return monthView(selectedMonth || todayISO().slice(0, 7));
 }
+function calendarMonthView(month) {
+  const [year, monthNumber] = month.split('-').map(Number);
+  const start = `${month}-01`;
+  const len = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+  const firstWeekday = (parseISO(start).getUTCDay() + 6) % 7;
+  return { start, len, firstWeekday };
+}
+function calendarEntries() {
+  const entries = exampleEntries();
+  Object.keys(S.entries).forEach(date => { entries[date] = S.entries[date]; });
+  return entries;
+}
 function chartEntriesForMonth(month) {
   const entries = {};
   const sample = exampleEntries();
@@ -1057,6 +1151,86 @@ function renderChart() {
   if (c.peak) sum += `Schleimhöhepunkt: Monatstag ${c.peak.idx + 1}${c.peak.confirmed ? '' : ' (vorläufig)'}.`;
   $('chartSummary').textContent = sum;
   $('legend').innerHTML = legendHTML();
+}
+function renderCalendar() {
+  const currentMonth = todayISO().slice(0, 7);
+  if (!selectedCalendarMonth || selectedCalendarMonth > currentMonth) selectedCalendarMonth = currentMonth;
+  $('calendarMonthName').textContent = fmt(selectedCalendarMonth + '-01', { month: 'long', year: 'numeric' });
+  $('calendarPrevMonth').disabled = selectedCalendarMonth <= '1900-01';
+  $('calendarNextMonth').disabled = selectedCalendarMonth >= currentMonth;
+
+  const view = calendarMonthView(selectedCalendarMonth);
+  const entries = calendarEntries();
+  const starts = Object.keys(entries).filter(date => isStart(date, entries)).sort();
+  const signs = {};
+  const monthDates = [];
+  for (let day = 1; day <= view.len; day++) monthDates.push(addDays(view.start, day - 1));
+  starts.forEach((start, index) => {
+    const end = starts[index + 1] ? addDays(starts[index + 1], -1) : todayISO();
+    const len = Math.max(0, diffDays(end, start) + 1);
+    const cycle = { start, len };
+    const shift = detectShift(cycle, entries);
+    const peak = detectPeak(cycle, entries);
+    if (shift) {
+      for (let i = shift.confirm; i < len; i++) {
+        const date = addDays(start, i);
+        signs[date] = signs[date] || {};
+        signs[date].thermal = true;
+      }
+    }
+    if (peak) {
+      const date = addDays(start, peak.idx);
+      signs[date] = signs[date] || {};
+      signs[date].peak = true;
+    }
+  });
+
+  const days = ['<span class="cal-day cal-empty" aria-hidden="true"></span>'.repeat(view.firstWeekday)];
+  let logged = 0, bleeding = 0, mucus = 0;
+  monthDates.forEach(date => {
+    const entry = entries[date];
+    const mark = signs[date] || {};
+    const hasBleed = !!(entry && BLEED_ON.includes(entry.b));
+    const hasMucus = !!(entry && (entry.o === 'f' || entry.o === 's' || hasBest(entry)));
+    const hasTemp = !!(entry && typeof entry.t === 'number');
+    const hasSex = !!(entry && entry.x);
+    const isToday = date === todayISO();
+    if (entry) logged++;
+    if (hasBleed) bleeding++;
+    if (hasMucus) mucus++;
+    const labels = [];
+    if (hasBleed) labels.push('Blutung eingetragen');
+    if (hasMucus) labels.push('Feucht oder Schleim beobachtet');
+    if (hasTemp) labels.push('Aufwachtemperatur eingetragen');
+    if (mark.peak) labels.push('Schleimhöhepunkt beobachtet');
+    if (mark.thermal) labels.push('Temperaturhochlage vereinfacht bestätigt');
+    if (hasSex) labels.push('Geschlechtsverkehr eingetragen');
+    const accessible = `${fmt(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} – ${labels.length ? labels.join('; ') : 'keine besonderen Zeichen markiert'}. Details anzeigen`;
+    const markers = [
+      hasBleed ? '<span class="cal-marker" aria-hidden="true">M</span>' : '',
+      hasMucus ? '<span class="cal-marker" aria-hidden="true">S</span>' : '',
+      mark.peak ? '<span class="cal-marker" aria-hidden="true">H</span>' : '',
+      mark.thermal ? '<span class="cal-marker" aria-hidden="true">T</span>' : '',
+      hasSex ? '<span class="cal-marker heart" aria-hidden="true">♥</span>' : ''
+    ].join('');
+    const className = ['cal-day', hasBleed ? 'cal-bleed' : '', hasMucus ? 'cal-mucus' : '', mark.thermal ? 'cal-temp' : '', isToday ? 'cal-today' : ''].filter(Boolean).join(' ');
+    days.push(`<button type="button" class="${className}" data-calendar-date="${date}" aria-label="${esc(accessible)}"><span class="cal-date">${parseISO(date).getUTCDate()}</span><span class="cal-markers">${markers}</span></button>`);
+  });
+  $('calendarGrid').innerHTML = days.join('');
+  const label = fmt(view.start, { month: 'long', year: 'numeric' });
+  let summary = logged
+    ? `${label}: ${logged} Tage mit Einträgen · ${bleeding} Blutungstage · ${mucus} Tage mit Feucht-/Schleimbeobachtung.`
+    : `${label}: Keine Einträge. Ohne Beobachtungen wird keine Zyklusphase angezeigt.`;
+  if (Object.keys(entries).some(date => date.slice(0, 7) === selectedCalendarMonth && entries[date].ex)) summary = `Beispieldaten · ${summary}`;
+  $('calendarSummary').textContent = summary;
+}
+function shiftCalendarMonth(amount) {
+  const [year, month] = selectedCalendarMonth.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1 + amount, 1));
+  const next = `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}`;
+  const current = todayISO().slice(0, 7);
+  if (next >= '1900-01' && next <= current) selectedCalendarMonth = next;
+  renderCalendar();
 }
 function shiftSelectedMonth(amount) {
   const [year, month] = selectedMonth.split('-').map(Number);
@@ -1260,7 +1434,7 @@ function makeExampleHTML(entries) {
   const exported = document.documentElement.cloneNode(true);
   const byId = id => exported.querySelector('#' + id);
   byId('exampleData').textContent = JSON.stringify(entries, null, 2).replace(/</g, '\\u003c');
-  ['tab-chart', 'tab-data', 'qGroup', 'imgOverlay', 'dayOverlay', 'backupBox', 'exBanner', 'exBanner2', 'storeWarn', 'delBtn'].forEach(id => byId(id).hidden = true);
+  ['tab-chart', 'tab-calendar', 'tab-data', 'qGroup', 'imgOverlay', 'dayOverlay', 'backupBox', 'exBanner', 'exBanner2', 'storeWarn', 'delBtn'].forEach(id => byId(id).hidden = true);
   byId('tab-today').hidden = false;
   byId('dateIn').removeAttribute('max');
   byId('dateIn').removeAttribute('value');
@@ -1280,6 +1454,9 @@ function makeExampleHTML(entries) {
   byId('chartBox').hidden = true;
   byId('legend').textContent = '';
   byId('legend').hidden = true;
+  byId('calendarGrid').textContent = '';
+  byId('calendarSummary').textContent = '';
+  byId('calendarMonthName').textContent = '';
   byId('dataStatus').textContent = '';
   byId('backupText').textContent = '';
   byId('backupText').value = '';
@@ -1369,18 +1546,19 @@ function onWipe() {
 /* ---------- Navigation ---------- */
 function setTab(name) {
   tab = name;
-  ['today', 'chart', 'data'].forEach(t => { $('tab-' + t).hidden = t !== name; });
+  ['today', 'chart', 'calendar', 'data'].forEach(t => { $('tab-' + t).hidden = t !== name; });
   document.querySelectorAll('nav button').forEach(b => {
     if (b.dataset.tab === name) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
   });
   if (name === 'chart') scrollChart();
+  if (name === 'calendar') renderCalendar();
   window.scrollTo(0, 0);
 }
 function refresh(date) {
   const hasEx = Object.keys(S.entries).some(d => S.entries[d].ex);
   $('exBanner').hidden = !hasEx; $('exBanner2').hidden = !hasEx;
   loadForm(date);
-  renderRecent(); renderChart(); renderData();
+  renderRecent(); renderChart(); renderCalendar(); renderData();
   if (tab === 'chart') scrollChart();
 }
 
@@ -1392,12 +1570,23 @@ const today = todayISO();
 selectedMonth = today.slice(0, 7);
 $('dateIn').max = today;
 $('dateIn').value = today;
+selectedCalendarMonth = today.slice(0, 7);
 $('prevMonth').addEventListener('click', () => shiftSelectedMonth(-1));
 $('nextMonth').addEventListener('click', () => shiftSelectedMonth(1));
 $('currentMonth').addEventListener('click', () => {
   selectedMonth = todayISO().slice(0, 7);
   renderChart();
   scrollChart();
+});
+$('calendarPrevMonth').addEventListener('click', () => shiftCalendarMonth(-1));
+$('calendarNextMonth').addEventListener('click', () => shiftCalendarMonth(1));
+$('calendarCurrentMonth').addEventListener('click', () => {
+  selectedCalendarMonth = todayISO().slice(0, 7);
+  renderCalendar();
+});
+$('calendarGrid').addEventListener('click', e => {
+  const day = e.target.closest('[data-calendar-date]');
+  if (day) showDayDetails(day.dataset.calendarDate);
 });
 $('dateIn').addEventListener('change', () => { const d = $('dateIn').value; if (d) { loadForm(d); say(''); } });
 $('obsChips').addEventListener('change', syncQGroup);
